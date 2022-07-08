@@ -4,14 +4,12 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "base64-sol/base64.sol";
 
-contract DMVxV_2 {
+contract DMVxV_4 {
     string public stateCode;
     mapping(address=> bool) public Admins;
-    address[] admins;
+    address[] public admins;
     address payable MasterAdmin;
     address public DealerNFTContractAddress;
-    uint256 internal prevRandomNumber;
-    uint256 public number;
 
     modifier DealerOnly() {
         IERC721 token = IERC721(DealerNFTContractAddress);
@@ -100,7 +98,7 @@ contract DMVxV_2 {
         address _ownerAddress,
         string memory _registrationNum,
         string memory _regId
-    ) public DealerOnly {
+    ) public {
         IERC721 token = IERC721(DealerNFTContractAddress);
         uint c = token.balanceOf(msg.sender);
         require(c == 1, "Not a registered Dealer");
@@ -128,21 +126,16 @@ contract DMVxV_2 {
         return vehicleArray;
     }
 
-    function DealersVehicle() public view DealerOnly returns (Vehicle[] memory Varray) {
+    function DealersVehicle(address dealerAddress) public view returns (Vehicle[] memory Varray) {
         Varray = new Vehicle[](vehicleCount);
-        Vehicle memory targetvehicle;
-        Dealer memory targetDealer;
         uint j = 0;
         uint i = 0;
         while( i < vehicleCount) {
-            targetvehicle = vehicleArray[i];
-            targetDealer = targetvehicle.dealer;
-            if (targetDealer.walletAddress == msg.sender){
-                Varray[j] = targetvehicle;
+            if (vehicleArray[i].dealer.walletAddress == dealerAddress){
+                Varray[j] = vehicleArray[i];
                 j++;
             }
             i = i++;
-           
         }
         return Varray;
     }
@@ -183,6 +176,26 @@ contract DMVxV_2 {
         for(uint i = 0; i < vehicleCount; i++){
             if(keccak256(abi.encodePacked((vehicleArray[i].registrationNumber))) == keccak256(abi.encodePacked((m_regnum)))){
                 vehicleArray[i].registered = false;
+            }
+        }
+    }
+
+    function RevokeSuspension(string memory m_regnum) public AdminOnly {
+        VehicleRecord[m_regnum].registered = true;
+        for(uint i = 0; i < vehicleCount; i++){
+            if(keccak256(abi.encodePacked((vehicleArray[i].registrationNumber))) == keccak256(abi.encodePacked((m_regnum)))){
+                vehicleArray[i].registered = true;
+            }
+        }
+    }
+
+    function InsuranceDeactive(string memory m_regnum) public {
+        VehicleRecord[m_regnum].insuranceDetails = "";
+        VehicleRecord[m_regnum].insuranceActive = false;
+        for(uint i = 0; i < vehicleCount; i++){
+            if(keccak256(abi.encodePacked((vehicleArray[i].registrationNumber))) == keccak256(abi.encodePacked((m_regnum)))){
+                vehicleArray[i].insuranceActive = false;
+                vehicleArray[i].insuranceDetails = "";
             }
         }
     }
